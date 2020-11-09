@@ -1,9 +1,10 @@
-from threading import Thread, Semaphore
+from threading import Thread, Semaphore, Lock
 import cv2, time, sys, os
 import numpy as np
 
 fileName = 'clip.mp4'
 semaphore = Semaphore(2)
+lock = Lock()
 extractQueue = []
 grayscaleQueue = []
 
@@ -21,7 +22,9 @@ class extractFrames(Thread):
         while True:
             if (success and len(extractQueue) <= 10):
                 semaphore.acquire()
+                lock.acquire()
                 extractQueue.append(frame)
+                lock.release()
                 semaphore.release()
 
                 success, frame = vidcap.read()
@@ -30,7 +33,9 @@ class extractFrames(Thread):
 
             if(self.count >= frameCount):
                 semaphore.acquire()
+                lock.acquire()
                 extractQueue.append(-1)
+                lock.release()
                 semaphore.release()
                 break
         return
@@ -43,18 +48,24 @@ class convertToGrayscale(Thread):
         while True:
             if((len(extractQueue) > 0) and len(grayscaleQueue) < 10):
                 semaphore.acquire()
+                lock.acquire()
                 frame  = extractQueue.pop(0)
+                lock.release()
                 semaphore.release()
 
                 if((type(frame) == int) and (frame == -1)):
                     semaphore.acquire()
+                    lock.acquire()
                     grayscaleQueue.append(-1)
+                    lock.release()
                     semaphore.release()
                     break
                 print("Converting Frame:", self.count)
                 grayscaleFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 semaphore.acquire()
+                lock.acquire()
                 grayscaleQueue.append(grayscaleFrame)
+                lock.release
                 semaphore.release()
 
                 self.count += 1
@@ -69,7 +80,9 @@ class displayFrames(Thread):
         while True:
             if(len(grayscaleQueue) > 0):
                 semaphore.acquire()
+                lock.acquire()
                 frame = grayscaleQueue.pop(0)
+                lock.release()
                 semaphore.release()
 
                 if((type(frame) ==int) and (frame == -1)):
