@@ -3,7 +3,7 @@ import cv2, time, sys, os
 import numpy as np
 
 fileName = 'clip.mp4'
-semaphore = Semaphore(2)
+semaphore = Semaphore(10)
 lock = Lock()
 extractQueue = []
 grayscaleQueue = []
